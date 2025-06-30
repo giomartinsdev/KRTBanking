@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KRTBanking.Application", "src\KRTBanking.Application\KRTBanking.Application.csproj", "{CC7501B2-0C83-463D-97B9-4E6695F6B925}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KRTBanking.Domain", "src/KRTBanking.Domain\KRTBanking.Domain.csproj", "{B617D00F-B328-4EC0-8C09-B1947B4C3DE7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KRTBanking.API", "src/KRTBanking.API\KRTBanking.API.csproj", "{C1C20A23-D121-4DB9-B952-0F54DA4289F1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6EEF8077-B7D6-48E6-A06E-80897E791742}"
+	ProjectSection(SolutionItems) = preProject
+		compose.yaml = compose.yaml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CC7501B2-0C83-463D-97B9-4E6695F6B925}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC7501B2-0C83-463D-97B9-4E6695F6B925}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC7501B2-0C83-463D-97B9-4E6695F6B925}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC7501B2-0C83-463D-97B9-4E6695F6B925}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B617D00F-B328-4EC0-8C09-B1947B4C3DE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B617D00F-B328-4EC0-8C09-B1947B4C3DE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B617D00F-B328-4EC0-8C09-B1947B4C3DE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B617D00F-B328-4EC0-8C09-B1947B4C3DE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1C20A23-D121-4DB9-B952-0F54DA4289F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1C20A23-D121-4DB9-B952-0F54DA4289F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1C20A23-D121-4DB9-B952-0F54DA4289F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1C20A23-D121-4DB9-B952-0F54DA4289F1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CC7501B2-0C83-463D-97B9-4E6695F6B925} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{B617D00F-B328-4EC0-8C09-B1947B4C3DE7} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{C1C20A23-D121-4DB9-B952-0F54DA4289F1} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EAC446FE-BBAB-4DBE-AA1A-C487DB5CFB7E}
+	EndGlobalSection
+EndGlobal

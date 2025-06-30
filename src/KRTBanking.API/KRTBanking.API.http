@@ -1,0 +1,6 @@
+@KRTBanking.API_HostAddress = http://localhost:5261
+
+GET {{KRTBanking.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
