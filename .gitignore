@@ -409,5 +409,9 @@ obj/
 /node_modules
 /wwwroot/node_modules
 
+.idea
+.github/instructions
+.vscode
+
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,csharp
 
