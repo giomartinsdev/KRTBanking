@@ -132,54 +132,6 @@ public sealed class CustomerRepository : ICustomerRepository
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<Customer>> GetByAccountAsync(
-        Account account, 
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(account);
-
-        try
-        {
-            var accountJson = JsonSerializer.Serialize(new AccountModel
-            {
-                Number = account.Number,
-                CreatedAt = account.CreatedAt
-            });
-
-            var request = new ScanRequest
-            {
-                TableName = _options.CustomerTableName,
-                FilterExpression = "#account = :account",
-                ExpressionAttributeNames = new Dictionary<string, string>
-                {
-                    ["#account"] = "Account"
-                },
-                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-                {
-                    [":account"] = new AttributeValue { S = accountJson }
-                }
-            };
-
-            var customers = new List<Customer>();
-            var response = await _dynamoDbClient.ScanAsync(request, cancellationToken);
-
-            foreach (var item in response.Items)
-            {
-                var model = CustomerDynamoDbModel.FromDynamoDbItem(item);
-                customers.Add(CustomerMapper.ToDomain(model));
-            }
-
-            _logger.LogInformation("Found {Count} customers with account {Account}", customers.Count, account.FormattedAccount);
-            return customers;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving customers with account {Account}", account.FormattedAccount);
-            throw;
-        }
-    }
-
-    /// <inheritdoc />
     public async Task AddAsync(Customer customer, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(customer);
@@ -191,7 +143,7 @@ public sealed class CustomerRepository : ICustomerRepository
             {
                 TableName = _options.CustomerTableName,
                 Item = model.ToDynamoDbItem(),
-                ConditionExpression = "attribute_not_exists(PK)" // Ensure customer doesn't already exist
+                ConditionExpression = "attribute_not_exists(PK)"
             };
 
             await _dynamoDbClient.PutItemAsync(request, cancellationToken);
@@ -338,23 +290,6 @@ public sealed class CustomerRepository : ICustomerRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving customers");
-            throw;
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task<bool> ExistsAsync(DocumentNumber documentNumber, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(documentNumber);
-
-        try
-        {
-            var customer = await GetByDocumentNumberAsync(documentNumber, cancellationToken);
-            return customer is not null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking existence of customer with document number {DocumentNumber}", documentNumber.Value);
             throw;
         }
     }

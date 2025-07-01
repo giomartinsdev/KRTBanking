@@ -117,25 +117,6 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
     }
 
     /// <summary>
-    /// Gets customers by account information.
-    /// </summary>
-    /// <param name="account">The account information.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The matching customers.</returns>
-    public async Task<IEnumerable<Customer>> GetByAccountAsync(Account account, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(account);
-
-        var search = _context.ScanAsync<CustomerDynamoModel>(new List<ScanCondition>
-        {
-            new("AccountNumber", ScanOperator.Equal, account.Number)
-        });
-
-        var results = await search.GetRemainingAsync(cancellationToken);
-        return results.Select(MapToDomain);
-    }
-
-    /// <summary>
     /// Removes a customer from the repository.
     /// </summary>
     /// <param name="customer">The customer to remove.</param>
@@ -166,18 +147,6 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
         
         // For simplicity, return all results without pagination in this implementation
         return (customers, null);
-    }
-
-    /// <summary>
-    /// Checks if a customer exists by document number.
-    /// </summary>
-    /// <param name="documentNumber">The document number.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>True if the customer exists; otherwise, false.</returns>
-    public async Task<bool> ExistsAsync(DocumentNumber documentNumber, CancellationToken cancellationToken = default)
-    {
-        var customer = await GetByDocumentNumberAsync(documentNumber, cancellationToken);
-        return customer != null;
     }
 
     /// <summary>
@@ -219,14 +188,12 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
     {
         var documentNumber = new DocumentNumber(model.DocumentNumber);
         
-        // Parse agency from account number (format: "AAAA-NNNNNNNN")
         var accountParts = model.AccountNumber.Split('-');
         var agency = (Agency)int.Parse(accountParts[0]);
         var accountNumber = int.Parse(accountParts[1]);
         
         var account = Account.Create(agency, accountNumber);
         
-        // Create initial limit entry if there's a limit amount
         var limitEntries = new List<LimitEntry>();
         if (model.LimitAmount > 0)
         {

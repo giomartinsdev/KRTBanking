@@ -2,7 +2,10 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.Runtime;
 using KRTBanking.Domain.Context.Customer.Repositories;
+using KRTBanking.Infrastructure.Data;
 using KRTBanking.Infrastructure.Data.Repositories;
+using KRTBanking.Infrastructure.HealthChecks;
+using KRTBanking.Infrastructure.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -39,13 +42,25 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDynamoDBContext>(serviceProvider =>
         {
             var client = serviceProvider.GetRequiredService<IAmazonDynamoDB>();
-#pragma warning disable CS0618 // Type or member is obsolete
             return new DynamoDBContext(client);
-#pragma warning restore CS0618 // Type or member is obsolete
         });
 
-        // Register repositories
         services.AddScoped<ICustomerRepository, CustomerDynamoRepository>();
+
+        services.AddTransient<IDatabaseInitializer, DynamoDbInitializer>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds DynamoDB health checks to the service collection.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddDynamoDbHealthChecks(this IServiceCollection services)
+    {
+        services.AddHealthChecks()
+            .AddCheck<DynamoDbHealthCheck>("dynamodb");
 
         return services;
     }

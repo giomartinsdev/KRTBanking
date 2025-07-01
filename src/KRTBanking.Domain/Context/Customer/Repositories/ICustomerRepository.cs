@@ -15,7 +15,15 @@ public interface ICustomerRepository
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The customer if found; otherwise, null.</returns>
     Task<Entities.Customer?> GetByIdAsync(Guid customerId, CancellationToken cancellationToken = default);
-    
+
+    /// <summary>
+    /// Gets a customer by their document number.
+    /// </summary>
+    /// <param name="documentNumber">The customer's document number.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The customer if found; otherwise, null.</returns>
+    Task<Entities.Customer?> GetByDocumentNumberAsync(DocumentNumber documentNumber, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Gets a customer by their document number string.
     /// </summary>
@@ -23,7 +31,7 @@ public interface ICustomerRepository
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The customer if found; otherwise, null.</returns>
     Task<Entities.Customer?> GetByDocumentNumberAsync(string documentNumber, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Adds a new customer to the repository.
     /// </summary>
@@ -59,12 +67,4 @@ public interface ICustomerRepository
         int pageSize = 50, 
         string? lastEvaluatedKey = null, 
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Checks if a customer with the specified document number exists.
-    /// </summary>
-    /// <param name="documentNumber">The document number to check.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>true if a customer with the document number exists; otherwise, false.</returns>
-    Task<bool> ExistsAsync(DocumentNumber documentNumber, CancellationToken cancellationToken = default);
 }

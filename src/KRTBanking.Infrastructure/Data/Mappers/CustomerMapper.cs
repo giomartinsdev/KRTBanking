@@ -90,7 +90,6 @@ public static class CustomerMapper
             throw new InvalidOperationException($"Invalid updated date: {model.UpdatedAt}");
         }
 
-        // Parse account information
         Account? account = null;
         if (!string.IsNullOrEmpty(model.Account))
         {
@@ -99,7 +98,6 @@ public static class CustomerMapper
                 var accountModel = JsonSerializer.Deserialize<AccountModel>(model.Account, JsonOptions);
                 if (accountModel is not null)
                 {
-                    // Parse the formatted account number (e.g., "0001-12345678")
                     var accountParts = accountModel.Number.Split('-');
                     if (accountParts.Length == 2 && 
                         int.TryParse(accountParts[0], out var agencyCode) && 
@@ -120,7 +118,6 @@ public static class CustomerMapper
             }
         }
 
-        // Parse limit entries information
         var limitEntries = new List<LimitEntry>();
         if (!string.IsNullOrEmpty(model.Limits))
         {
@@ -138,7 +135,6 @@ public static class CustomerMapper
             }
         }
 
-        // Use the Reconstruct factory method to restore the customer entity
         return Customer.Reconstruct(
             id: customerId,
             documentNumber: documentNumber,

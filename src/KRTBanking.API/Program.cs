@@ -1,8 +1,7 @@
-using Amazon.DynamoDBv2;
-using Amazon.DynamoDBv2.Model;
 using KRTBanking.Application.Interfaces.Services;
 using KRTBanking.Application.Services;
 using KRTBanking.Infrastructure.Extensions;
+using KRTBanking.Infrastructure.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,20 +12,31 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddScoped<IWeatherForecastService, WeatherForecastService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
-
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+    options.LowercaseQueryStrings = true;
+});
 builder.Services.AddDynamoDb(builder.Configuration);
+builder.Services.AddDynamoDbHealthChecks();
 
 var app = builder.Build();
 
 try
 {
-    var dynamoDbClient = app.Services.GetRequiredService<IAmazonDynamoDB>();
-    await CreateTableIfNotExists(dynamoDbClient);
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Initializing database tables...");
+    
+    var databaseInitializer = app.Services.GetRequiredService<IDatabaseInitializer>();
+    await databaseInitializer.InitializeAsync();
+    
+    logger.LogInformation("Database initialization completed successfully.");
 }
 catch (Exception ex)
 {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
-    logger.LogError(ex, "Failed to initialize DynamoDB tables. The application will continue without table initialization.");
+    logger.LogCritical(ex, "Failed to initialize database tables. Application cannot start without proper database setup.");
+    Environment.Exit(1);
 }
 
 if (app.Environment.IsDevelopment())
@@ -43,49 +53,3 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
-
-static async Task CreateTableIfNotExists(IAmazonDynamoDB client)
-{
-    var listTable = new List<string>()
-    {
-        "KRTBanking-Customers",
-    };
-
-    foreach (var tableName in listTable)
-    {
-        try
-        {
-            var tableResponse = await client.DescribeTableAsync(tableName);
-        }
-        catch (ResourceNotFoundException)
-        {
-            var createTableRequest = new CreateTableRequest
-            {
-                TableName = tableName,
-                AttributeDefinitions = new List<AttributeDefinition>
-                {
-                    new AttributeDefinition("Id", ScalarAttributeType.S)
-                },
-                KeySchema = new List<KeySchemaElement>
-                {
-                    new KeySchemaElement("Id", KeyType.HASH)
-                },
-                ProvisionedThroughput = new ProvisionedThroughput
-                {
-                    ReadCapacityUnits = 5,
-                    WriteCapacityUnits = 5
-                }
-            };
-
-            await client.CreateTableAsync(createTableRequest);
-
-            var tableStatus = "CREATING";
-            while (tableStatus == "CREATING")
-            {
-                await Task.Delay(1000);
-                var response = await client.DescribeTableAsync(tableName);
-                tableStatus = response.Table.TableStatus;
-            }
-        }
-    }
-}
