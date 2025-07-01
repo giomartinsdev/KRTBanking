@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2.DocumentModel;
 using KRTBanking.Domain.Context.Customer.Entities;
@@ -186,6 +187,15 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
 
     private static CustomerDynamoModel MapToModel(Customer customer)
     {
+        var limitEntriesJson = customer.LimitEntries.Count > 0
+            ? JsonSerializer.Serialize(customer.LimitEntries.Select(entry => new LimitEntryModel
+            {
+                Amount = entry.Amount,
+                Description = entry.Description,
+                CreatedAt = entry.CreatedAt
+            }).ToList())
+            : "[]";
+
         return new CustomerDynamoModel
         {
             Id = customer.Id.ToString(),
@@ -193,7 +203,7 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
             Name = customer.Name,
             Email = customer.Email,
             AccountNumber = customer.Account.Number,
-            LimitAmount = customer.CurrentLimit,
+            LimitEntries = limitEntriesJson,
             IsActive = customer.IsActive,
             CreatedAt = customer.CreatedAt,
             UpdatedAt = customer.UpdatedAt,
@@ -212,9 +222,21 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
         var account = Account.Create(agency, accountNumber);
         
         var limitEntries = new List<LimitEntry>();
-        if (model.LimitAmount > 0)
+        if (!string.IsNullOrEmpty(model.LimitEntries) && model.LimitEntries != "[]")
         {
-            limitEntries.Add(new LimitEntry(model.LimitAmount, "Initial Credit Limit"));
+            try
+            {
+                var limitEntryModels = JsonSerializer.Deserialize<List<LimitEntryModel>>(model.LimitEntries);
+                if (limitEntryModels != null)
+                {
+                    limitEntries.AddRange(limitEntryModels.Select(entry =>
+                        new LimitEntry(entry.Amount, entry.Description)));
+                }
+            }
+            catch (JsonException)
+            {
+                limitEntries = [];
+            }
         }
 
         return Customer.Reconstruct(

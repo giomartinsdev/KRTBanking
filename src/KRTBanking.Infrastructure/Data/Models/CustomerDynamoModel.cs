@@ -39,10 +39,10 @@ public sealed class CustomerDynamoModel
     public required string AccountNumber { get; set; }
 
     /// <summary>
-    /// Gets or sets the credit limit amount.
+    /// Gets or sets the limit entries as JSON string.
     /// </summary>
     [DynamoDBProperty]
-    public decimal LimitAmount { get; set; }
+    public string LimitEntries { get; set; } = "[]";
 
     /// <summary>
     /// Gets or sets a value indicating whether the customer is active.
