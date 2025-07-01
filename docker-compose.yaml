@@ -32,8 +32,6 @@
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - AwsConfig__ServiceURL=http://dynamodb-local:8000
-      - AwsConfig__AccessKey=fakeMyKeyId
-      - AwsConfig__SecretKey=fakeSecretAccessKey
     depends_on:
       - dynamodb-local
     networks:
