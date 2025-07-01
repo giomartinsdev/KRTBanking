@@ -1,4 +1,5 @@
 using KRTBanking.Application.DTOs.Customer;
+using KRTBanking.Application.DTOs.Transaction;
 
 namespace KRTBanking.Application.Interfaces.Services;
 
@@ -57,4 +58,15 @@ public interface ICustomerService
     /// <exception cref="InvalidOperationException">Thrown when customer is not found or already inactive.</exception>
     /// <exception cref="ArgumentNullException">Thrown when deactivateDto is null.</exception>
     Task DeactivateCustomerAsync(Guid customerId, DeactivateCustomerDto deactivateDto, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes a transaction for a customer based on merchant document.
+    /// Checks if the customer has sufficient limit and processes the transaction.
+    /// </summary>
+    /// <param name="executeTransactionDto">The transaction execution details.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the transaction result.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when executeTransactionDto is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when customer is not found or inactive.</exception>
+    Task<TransactionResultDto> ExecuteTransactionAsync(ExecuteTransactionDto executeTransactionDto, CancellationToken cancellationToken = default);
 }

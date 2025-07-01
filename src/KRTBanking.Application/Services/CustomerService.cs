@@ -1,4 +1,5 @@
 using KRTBanking.Application.DTOs.Customer;
+using KRTBanking.Application.DTOs.Transaction;
 using KRTBanking.Application.Interfaces.Services;
 using KRTBanking.Domain.Context.Customer.Entities;
 using KRTBanking.Domain.Context.Customer.Repositories;
@@ -193,5 +194,70 @@ public sealed class CustomerService : ICustomerService
             UpdatedAt = customer.UpdatedAt,
             Version = customer.Version
         };
+    }
+
+    /// <inheritdoc />
+    public async Task<TransactionResultDto> ExecuteTransactionAsync(ExecuteTransactionDto executeTransactionDto, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(executeTransactionDto);
+
+        _logger.LogInformation("Executing transaction for merchant document: {MerchantDocument}, Value: {Value}", 
+            executeTransactionDto.MerchantDocument, executeTransactionDto.Value);
+
+        var customer = await _customerRepository.GetByDocumentNumberAsync(executeTransactionDto.MerchantDocument, cancellationToken);
+        
+        if (customer is null)
+        {
+            _logger.LogWarning("Customer not found with document number: {MerchantDocument}", executeTransactionDto.MerchantDocument);
+            return new TransactionResultDto
+            {
+                IsAuthorized = false,
+                Reason = "Customer not found",
+                TransactionValue = executeTransactionDto.Value
+            };
+        }
+
+        if (!customer.IsActive)
+        {
+            _logger.LogWarning("Transaction denied - Customer is inactive: {CustomerId}", customer.Id);
+            return new TransactionResultDto
+            {
+                IsAuthorized = false,
+                Reason = "Customer account is inactive",
+                TransactionValue = executeTransactionDto.Value,
+                RemainingLimit = customer.CurrentLimit
+            };
+        }
+
+        if (executeTransactionDto.Value <= customer.CurrentLimit)
+        {
+            customer.AdjustLimit(-executeTransactionDto.Value, $"Transaction for value {executeTransactionDto.Value:C}");
+            
+            await _customerRepository.UpdateAsync(customer, cancellationToken);
+
+            _logger.LogInformation("Transaction authorized for customer: {CustomerId}, Amount: {Amount}, Remaining limit: {RemainingLimit}", 
+                customer.Id, executeTransactionDto.Value, customer.CurrentLimit);
+
+            return new TransactionResultDto
+            {
+                IsAuthorized = true,
+                Reason = "Transaction authorized",
+                TransactionValue = executeTransactionDto.Value,
+                RemainingLimit = customer.CurrentLimit
+            };
+        }
+        else
+        {
+            _logger.LogWarning("Transaction denied - Insufficient limit. Customer: {CustomerId}, Required: {Required}, Available: {Available}", 
+                customer.Id, executeTransactionDto.Value, customer.CurrentLimit);
+
+            return new TransactionResultDto
+            {
+                IsAuthorized = false,
+                Reason = "Insufficient limit",
+                TransactionValue = executeTransactionDto.Value,
+                RemainingLimit = customer.CurrentLimit
+            };
+        }
     }
 }

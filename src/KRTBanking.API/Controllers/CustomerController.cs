@@ -1,4 +1,5 @@
 using KRTBanking.Application.DTOs.Customer;
+using KRTBanking.Application.DTOs.Transaction;
 using KRTBanking.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -176,6 +177,69 @@ public class CustomerController : ControllerBase
                 Title = "Customer Already Deleted",
                 Detail = "The customer has already been deleted.",
                 Status = StatusCodes.Status409Conflict
+            });
+        }
+    }
+
+    /// <summary>
+    /// Executes a transaction for a customer based on merchant document.
+    /// </summary>
+    /// <param name="executeTransactionDto">The transaction execution details.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The transaction result.</returns>
+    [HttpPost("execute-transaction")]
+    [ProducesResponseType(typeof(TransactionResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TransactionResultDto>> ExecuteTransactionAsync(
+        [FromBody] ExecuteTransactionDto executeTransactionDto,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _customerService.ExecuteTransactionAsync(executeTransactionDto, cancellationToken);
+            
+            if (!result.IsAuthorized)
+            {
+                return Ok(result);
+            }
+
+            return Ok(result);
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid Request",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Validation Error",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Business Rule Violation",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "Internal Server Error",
+                Detail = "An unexpected error occurred while processing the transaction.",
+                Status = StatusCodes.Status500InternalServerError
             });
         }
     }
