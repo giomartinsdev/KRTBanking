@@ -48,22 +48,31 @@ public interface ICustomerRepository
     /// <returns>A task representing the asynchronous operation.</returns>
     Task UpdateAsync(Entities.Customer customer, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Removes a customer from the repository.
-    /// </summary>
-    /// <param name="customer">The customer to remove.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    Task RemoveAsync(Entities.Customer customer, CancellationToken cancellationToken = default);
+    // Note: Physical deletion is not supported. Use Customer.Deactivate() method for soft deletion.
+    // Physical deletion would violate financial regulations and audit requirements.
 
     /// <summary>
     /// Gets all customers with pagination support.
     /// </summary>
     /// <param name="pageSize">The number of customers per page.</param>
     /// <param name="lastEvaluatedKey">The last evaluated key for pagination.</param>
+    /// <param name="includeInactive">Whether to include inactive customers in the results.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A collection of customers and the next pagination key.</returns>
     Task<(IEnumerable<Entities.Customer> customers, string? nextPageKey)> GetAllAsync(
+        int pageSize = 50, 
+        string? lastEvaluatedKey = null,
+        bool includeInactive = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all active customers with pagination support.
+    /// </summary>
+    /// <param name="pageSize">The number of customers per page.</param>
+    /// <param name="lastEvaluatedKey">The last evaluated key for pagination.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A collection of active customers and the next pagination key.</returns>
+    Task<(IEnumerable<Entities.Customer> customers, string? nextPageKey)> GetAllActiveAsync(
         int pageSize = 50, 
         string? lastEvaluatedKey = null, 
         CancellationToken cancellationToken = default);

@@ -40,6 +40,12 @@ public sealed class Customer : AggregateRoot
     /// </summary>
     public decimal CurrentLimit => LimitEntries.Sum(entry => entry.Amount);
 
+    /// <summary>
+    /// Gets a value indicating whether the customer is active.
+    /// Inactive customers cannot perform banking operations.
+    /// </summary>
+    public bool IsActive { get; private set; }
+
     private readonly List<LimitEntry> _limitEntries;
 
     /// <summary>
@@ -51,6 +57,7 @@ public sealed class Customer : AggregateRoot
     /// <param name="email">The customer's email address.</param>
     /// <param name="account">The customer's account information.</param>
     /// <param name="limitEntries">The customer's limit entries collection.</param>
+    /// <param name="isActive">Indicates whether the customer is active.</param>
     /// <param name="createdAt">The creation timestamp.</param>
     /// <param name="updatedAt">The last update timestamp.</param>
     /// <param name="version">The version for optimistic concurrency control.</param>
@@ -61,6 +68,7 @@ public sealed class Customer : AggregateRoot
         string email,
         Account account,
         IEnumerable<LimitEntry> limitEntries,
+        bool isActive,
         DateTime createdAt,
         DateTime updatedAt,
         long version)
@@ -72,6 +80,7 @@ public sealed class Customer : AggregateRoot
         Account = account;
         _limitEntries = limitEntries.ToList();
         LimitEntries = _limitEntries.AsReadOnly();
+        IsActive = isActive;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
         Version = version;
@@ -113,8 +122,8 @@ public sealed class Customer : AggregateRoot
         Name = name.Trim();
         Email = email.Trim().ToLowerInvariant();
         Account = account;
+        IsActive = true;
         
-        // Initialize limit entries with the first entry
         _limitEntries = new List<LimitEntry>();
         if (initialLimitAmount > 0)
         {
@@ -158,6 +167,7 @@ public sealed class Customer : AggregateRoot
     /// <param name="email">The customer's email address.</param>
     /// <param name="account">The customer's account information.</param>
     /// <param name="limitEntries">The customer's limit entries collection.</param>
+    /// <param name="isActive">Indicates whether the customer is active.</param>
     /// <param name="createdAt">The creation timestamp.</param>
     /// <param name="updatedAt">The last update timestamp.</param>
     /// <param name="version">The version for optimistic concurrency control.</param>
@@ -169,13 +179,14 @@ public sealed class Customer : AggregateRoot
         string email,
         Account account,
         IEnumerable<LimitEntry> limitEntries,
+        bool isActive,
         DateTime createdAt,
         DateTime updatedAt,
         long version)
     {
         ArgumentNullException.ThrowIfNull(documentNumber);
 
-        return new Customer(id, documentNumber, name, email, account, limitEntries, createdAt, updatedAt, version);
+        return new Customer(id, documentNumber, name, email, account, limitEntries, isActive, createdAt, updatedAt, version);
     }
 
     /// <summary>
@@ -183,19 +194,20 @@ public sealed class Customer : AggregateRoot
     /// </summary>
     /// <param name="account">The new account information.</param>
     /// <exception cref="ArgumentNullException">Thrown when account is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when customer is inactive.</exception>
     public void UpdateAccount(Account account)
     {
+        EnsureCustomerIsActive();
         ArgumentNullException.ThrowIfNull(account);
 
         if (Account.Equals(account))
         {
-            return; // No change needed
+            return;
         }
 
         Account = account;
         MarkAsModified();
 
-        // Raise domain event for account update
         AddDomainEvent(new CustomerAccountUpdatedDomainEvent(Id, Account));
     }
 
@@ -205,8 +217,11 @@ public sealed class Customer : AggregateRoot
     /// <param name="amount">The adjustment amount (positive for increase, negative for decrease).</param>
     /// <param name="description">The description of the adjustment.</param>
     /// <exception cref="ArgumentException">Thrown when description is null or whitespace.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when customer is inactive.</exception>
     public void AdjustLimit(decimal amount, string description)
     {
+        EnsureCustomerIsActive();
+        
         if (string.IsNullOrWhiteSpace(description))
         {
             throw new ArgumentException("Limit adjustment description cannot be null or empty.", nameof(description));
@@ -252,5 +267,67 @@ public sealed class Customer : AggregateRoot
         }
 
         AdjustLimit(-amount, description);
+    }
+
+    /// <summary>
+    /// Deactivates the customer account (soft delete).
+    /// Once deactivated, the customer cannot perform banking operations but data is retained for compliance.
+    /// </summary>
+    /// <param name="reason">The reason for deactivation.</param>
+    /// <param name="deactivatedBy">The identifier of the user/system initiating the deactivation.</param>
+    /// <exception cref="ArgumentException">Thrown when reason is null or whitespace.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when customer is already inactive.</exception>
+    public void Deactivate(string reason, string? deactivatedBy = null)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Deactivation reason cannot be null or empty.", nameof(reason));
+        }
+
+        if (!IsActive)
+        {
+            throw new InvalidOperationException("Customer is already inactive.");
+        }
+
+        IsActive = false;
+        MarkAsModified();
+
+        AddDomainEvent(new CustomerDeactivatedDomainEvent(Id, reason, deactivatedBy));
+    }
+
+    /// <summary>
+    /// Reactivates a previously deactivated customer.
+    /// </summary>
+    /// <param name="reason">The reason for reactivation.</param>
+    /// <param name="reactivatedBy">The identifier of the user/system initiating the reactivation.</param>
+    /// <exception cref="ArgumentException">Thrown when reason is null or whitespace.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when customer is already active.</exception>
+    public void Reactivate(string reason, string? reactivatedBy = null)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new ArgumentException("Reactivation reason cannot be null or empty.", nameof(reason));
+        }
+
+        if (IsActive)
+        {
+            throw new InvalidOperationException("Customer is already active.");
+        }
+
+        IsActive = true;
+        MarkAsModified();
+
+    }
+
+    /// <summary>
+    /// Ensures that business operations can only be performed on active customers.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when customer is inactive.</exception>
+    private void EnsureCustomerIsActive()
+    {
+        if (!IsActive)
+        {
+            throw new InvalidOperationException("Cannot perform operations on an inactive customer.");
+        }
     }
 }

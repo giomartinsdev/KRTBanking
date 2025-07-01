@@ -12,7 +12,6 @@ namespace KRTBanking.API.Controllers;
 public class CustomerController : ControllerBase
 {
     private readonly ICustomerService _customerService;
-    private readonly ILogger<CustomerController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CustomerController"/> class.
@@ -24,7 +23,6 @@ public class CustomerController : ControllerBase
         ILogger<CustomerController> logger)
     {
         _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -134,9 +132,11 @@ public class CustomerController : ControllerBase
             });
         }
     }
-
+    
     /// <summary>
-    /// Deletes a customer.
+    /// Deletes a customer (soft delete).
+    /// The customer data is retained for compliance but the customer cannot perform banking operations.
+    /// This endpoint provides DELETE semantics while performing deactivation in the domain.
     /// </summary>
     /// <param name="id">The customer ID.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -144,13 +144,20 @@ public class CustomerController : ControllerBase
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteCustomerAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            await _customerService.DeleteCustomerAsync(id, cancellationToken);
+            var deactivateDto = new DeactivateCustomerDto
+            {
+                Reason = "Customer deletion requested via API",
+                DeactivatedBy = "API User"
+            };
+
+            await _customerService.DeactivateCustomerAsync(id, deactivateDto, cancellationToken);
             return NoContent();
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
@@ -160,6 +167,15 @@ public class CustomerController : ControllerBase
                 Title = "Customer Not Found",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("already inactive"))
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Customer Already Deleted",
+                Detail = "The customer has already been deleted.",
+                Status = StatusCodes.Status409Conflict
             });
         }
     }

@@ -43,6 +43,11 @@ public sealed class CustomerDto
     public decimal CurrentLimit => LimitEntries.Sum(entry => entry.Amount);
 
     /// <summary>
+    /// Gets or sets a value indicating whether the customer is active.
+    /// </summary>
+    public bool IsActive { get; set; }
+
+    /// <summary>
     /// Gets or sets the creation timestamp.
     /// </summary>
     public DateTime CreatedAt { get; set; }
@@ -234,4 +239,20 @@ public sealed class PagedCustomersDto
     /// Gets or sets a value indicating whether there are more pages.
     /// </summary>
     public bool HasNextPage { get; set; }
+}
+
+/// <summary>
+/// Data transfer object for deactivating a customer.
+/// </summary>
+public sealed class DeactivateCustomerDto
+{
+    /// <summary>
+    /// Gets or sets the reason for customer deactivation.
+    /// </summary>
+    public string Reason { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the identifier of the user/system initiating the deactivation.
+    /// </summary>
+    public string? DeactivatedBy { get; set; }
 }

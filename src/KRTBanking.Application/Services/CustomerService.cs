@@ -108,7 +108,7 @@ public sealed class CustomerService : ICustomerService
 
         _logger.LogInformation("Getting customers with page size: {PageSize}", pageSize);
 
-        var (customers, nextPageKey) = await _customerRepository.GetAllAsync(pageSize, lastEvaluatedKey, cancellationToken);
+        var (customers, nextPageKey) = await _customerRepository.GetAllAsync(pageSize, lastEvaluatedKey, includeInactive: false, cancellationToken);
 
         var customerDtos = customers.Select(MapToDto).ToList();
 
@@ -121,9 +121,11 @@ public sealed class CustomerService : ICustomerService
     }
 
     /// <inheritdoc />
-    public async Task DeleteCustomerAsync(Guid customerId, CancellationToken cancellationToken = default)
+    public async Task DeactivateCustomerAsync(Guid customerId, DeactivateCustomerDto deactivateDto, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Deleting customer with ID: {CustomerId}", customerId);
+        ArgumentNullException.ThrowIfNull(deactivateDto);
+        
+        _logger.LogInformation("Deactivating customer with ID: {CustomerId}, Reason: {Reason}", customerId, deactivateDto.Reason);
 
         var customer = await _customerRepository.GetByIdAsync(customerId, cancellationToken);
         if (customer is null)
@@ -131,9 +133,10 @@ public sealed class CustomerService : ICustomerService
             throw new InvalidOperationException($"Customer with ID {customerId} not found");
         }
 
-        await _customerRepository.RemoveAsync(customer, cancellationToken);
+        customer.Deactivate(deactivateDto.Reason, deactivateDto.DeactivatedBy);
+        await _customerRepository.UpdateAsync(customer, cancellationToken);
 
-        _logger.LogInformation("Customer deleted successfully with ID: {CustomerId}", customerId);
+        _logger.LogInformation("Customer deactivated successfully with ID: {CustomerId}", customerId);
     }
 
     /// <inheritdoc />
@@ -185,6 +188,7 @@ public sealed class CustomerService : ICustomerService
                 Description = entry.Description,
                 CreatedAt = entry.CreatedAt
             }).ToList(),
+            IsActive = customer.IsActive,
             CreatedAt = customer.CreatedAt,
             UpdatedAt = customer.UpdatedAt,
             Version = customer.Version

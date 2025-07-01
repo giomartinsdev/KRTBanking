@@ -47,11 +47,14 @@ public interface ICustomerService
     Task<PagedCustomersDto> GetCustomersAsync(int pageSize = 10, string? lastEvaluatedKey = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a customer asynchronously.
+    /// Deactivates a customer asynchronously (soft delete).
+    /// The customer data is retained for compliance but the customer cannot perform banking operations.
     /// </summary>
     /// <param name="customerId">The customer identifier.</param>
+    /// <param name="deactivateDto">The deactivation details.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when customer is not found.</exception>
-    Task DeleteCustomerAsync(Guid customerId, CancellationToken cancellationToken = default);
+    /// <exception cref="InvalidOperationException">Thrown when customer is not found or already inactive.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when deactivateDto is null.</exception>
+    Task DeactivateCustomerAsync(Guid customerId, DeactivateCustomerDto deactivateDto, CancellationToken cancellationToken = default);
 }

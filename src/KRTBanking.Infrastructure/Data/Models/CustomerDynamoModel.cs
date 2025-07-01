@@ -45,6 +45,12 @@ public sealed class CustomerDynamoModel
     public decimal LimitAmount { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the customer is active.
+    /// </summary>
+    [DynamoDBProperty]
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets the creation timestamp.
     /// </summary>
     [DynamoDBProperty]

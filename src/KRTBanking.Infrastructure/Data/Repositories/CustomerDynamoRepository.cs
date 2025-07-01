@@ -117,37 +117,53 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
     }
 
     /// <summary>
-    /// Removes a customer from the repository.
+    /// Gets all customers with pagination support.
     /// </summary>
-    /// <param name="customer">The customer to remove.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task RemoveAsync(Customer customer, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(customer);
-        await DeleteAsync(customer.Id, cancellationToken);
-    }
-
-    /// <summary>
-    /// Gets all customers with pagination.
-    /// </summary>
-    /// <param name="pageSize">The page size.</param>
+    /// <param name="pageSize">The number of customers per page.</param>
     /// <param name="lastEvaluatedKey">The last evaluated key for pagination.</param>
+    /// <param name="includeInactive">Whether to include inactive customers in the results.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A tuple containing the customers and the next page key.</returns>
+    /// <returns>A collection of customers and the next pagination key.</returns>
     public async Task<(IEnumerable<Customer> customers, string? nextPageKey)> GetAllAsync(
         int pageSize = 50, 
-        string? lastEvaluatedKey = null, 
+        string? lastEvaluatedKey = null,
+        bool includeInactive = false,
         CancellationToken cancellationToken = default)
     {
-        var search = _context.ScanAsync<CustomerDynamoModel>(new List<ScanCondition>());
+        var scanConditions = new List<ScanCondition>();
+        
+        if (!includeInactive)
+        {
+            scanConditions.Add(new ScanCondition("IsActive", ScanOperator.Equal, true));
+        }
+
+        var search = _context.ScanAsync<CustomerDynamoModel>(scanConditions);
         var results = await search.GetRemainingAsync(cancellationToken);
         
         var customers = results.Select(MapToDomain);
         
         // For simplicity, return all results without pagination in this implementation
+        // In a production environment, implement proper pagination with DynamoDB's pagination tokens
         return (customers, null);
     }
+
+    /// <summary>
+    /// Gets all active customers with pagination support.
+    /// </summary>
+    /// <param name="pageSize">The number of customers per page.</param>
+    /// <param name="lastEvaluatedKey">The last evaluated key for pagination.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A collection of active customers and the next pagination key.</returns>
+    public async Task<(IEnumerable<Customer> customers, string? nextPageKey)> GetAllActiveAsync(
+        int pageSize = 50, 
+        string? lastEvaluatedKey = null, 
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAllAsync(pageSize, lastEvaluatedKey, includeInactive: false, cancellationToken);
+    }
+
+    // Note: Physical deletion is not supported. Use Customer.Deactivate() method for soft deletion.
+    // Physical deletion would violate financial regulations and audit requirements.
 
     /// <summary>
     /// Gets customers by account number prefix.
@@ -178,6 +194,7 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
             Email = customer.Email,
             AccountNumber = customer.Account.Number,
             LimitAmount = customer.CurrentLimit,
+            IsActive = customer.IsActive,
             CreatedAt = customer.CreatedAt,
             UpdatedAt = customer.UpdatedAt,
             Version = customer.Version
@@ -207,6 +224,7 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
             model.Email,
             account,
             limitEntries,
+            model.IsActive,
             model.CreatedAt,
             model.UpdatedAt,
             model.Version);

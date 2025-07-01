@@ -238,18 +238,41 @@ public sealed class CustomerRepository : ICustomerRepository
         string? lastEvaluatedKey = null, 
         CancellationToken cancellationToken = default)
     {
+        return await GetAllAsync(pageSize, lastEvaluatedKey, includeInactive: false, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<(IEnumerable<Customer> customers, string? nextPageKey)> GetAllAsync(
+        int pageSize = 50, 
+        string? lastEvaluatedKey = null,
+        bool includeInactive = false,
+        CancellationToken cancellationToken = default)
+    {
         try
         {
             var request = new ScanRequest
             {
                 TableName = _options.CustomerTableName,
-                FilterExpression = "SK = :sk",
-                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-                {
-                    [":sk"] = new AttributeValue { S = "CUSTOMER" }
-                },
                 Limit = pageSize
             };
+
+            if (includeInactive)
+            {
+                request.FilterExpression = "SK = :sk";
+                request.ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+                {
+                    [":sk"] = new AttributeValue { S = "CUSTOMER" }
+                };
+            }
+            else
+            {
+                request.FilterExpression = "SK = :sk AND IsActive = :isActive";
+                request.ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+                {
+                    [":sk"] = new AttributeValue { S = "CUSTOMER" },
+                    [":isActive"] = new AttributeValue { BOOL = true }
+                };
+            }
 
             if (!string.IsNullOrEmpty(lastEvaluatedKey))
             {
@@ -284,7 +307,7 @@ public sealed class CustomerRepository : ICustomerRepository
                 nextPageKey = Convert.ToBase64String(keyBytes);
             }
 
-            _logger.LogInformation("Retrieved {Count} customers", customers.Count);
+            _logger.LogInformation("Retrieved {Count} customers (includeInactive: {IncludeInactive})", customers.Count, includeInactive);
             return (customers, nextPageKey);
         }
         catch (Exception ex)
@@ -292,5 +315,14 @@ public sealed class CustomerRepository : ICustomerRepository
             _logger.LogError(ex, "Error retrieving customers");
             throw;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<(IEnumerable<Customer> customers, string? nextPageKey)> GetAllActiveAsync(
+        int pageSize = 50, 
+        string? lastEvaluatedKey = null, 
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAllAsync(pageSize, lastEvaluatedKey, includeInactive: false, cancellationToken);
     }
 }

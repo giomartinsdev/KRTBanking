@@ -64,6 +64,11 @@ public sealed class CustomerDynamoDbModel
     public long Version { get; set; } = 1;
 
     /// <summary>
+    /// Gets or sets a value indicating whether the customer is active.
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets the Global Secondary Index 1 partition key (document number).
     /// </summary>
     public string GSI1PK { get; set; } = string.Empty;
@@ -89,6 +94,7 @@ public sealed class CustomerDynamoDbModel
             ["CreatedAt"] = new AttributeValue { S = CreatedAt },
             ["UpdatedAt"] = new AttributeValue { S = UpdatedAt },
             ["Version"] = new AttributeValue { N = Version.ToString() },
+            ["IsActive"] = new AttributeValue { BOOL = IsActive },
             ["GSI1PK"] = new AttributeValue { S = GSI1PK },
             ["GSI1SK"] = new AttributeValue { S = GSI1SK }
         };
@@ -119,6 +125,7 @@ public sealed class CustomerDynamoDbModel
             CreatedAt = item.GetValueOrDefault("CreatedAt")?.S ?? string.Empty,
             UpdatedAt = item.GetValueOrDefault("UpdatedAt")?.S ?? string.Empty,
             Version = long.TryParse(item.GetValueOrDefault("Version")?.N, out var version) ? version : 1,
+            IsActive = item.GetValueOrDefault("IsActive")?.BOOL ?? true,
             GSI1PK = item.GetValueOrDefault("GSI1PK")?.S ?? string.Empty,
             GSI1SK = item.GetValueOrDefault("GSI1SK")?.S ?? string.Empty
         };

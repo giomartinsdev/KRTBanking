@@ -56,6 +56,7 @@ public static class CustomerMapper
             CreatedAt = customer.CreatedAt.ToString("O"),
             UpdatedAt = customer.UpdatedAt.ToString("O"),
             Version = customer.Version,
+            IsActive = customer.IsActive,
             GSI1PK = CustomerDynamoDbModel.CreateGsi1PartitionKey(customer.DocumentNumber.Value),
             GSI1SK = "CUSTOMER"
         };
@@ -142,6 +143,7 @@ public static class CustomerMapper
             email: model.Email,
             account: account ?? throw new InvalidOperationException("Account data is required for customer reconstruction"),
             limitEntries: limitEntries,
+            isActive: model.IsActive,
             createdAt: createdAt,
             updatedAt: updatedAt,
             version: model.Version
