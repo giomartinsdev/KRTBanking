@@ -20,6 +20,7 @@
     <ItemGroup>
       <ProjectReference Include="..\KRTBanking.Application\KRTBanking.Application.csproj" />
       <ProjectReference Include="..\KRTBanking.Domain\KRTBanking.Domain.csproj" />
+      <ProjectReference Include="..\KRTBanking.Infrastructure\KRTBanking.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>

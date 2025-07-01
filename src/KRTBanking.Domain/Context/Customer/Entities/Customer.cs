@@ -1,25 +1,256 @@
 ﻿using BankingProject.Domain.Abstractions;
+using KRTBanking.Domain.Context.Customer.Events;
 using KRTBanking.Domain.Context.Customer.ValueObjects;
 
 namespace KRTBanking.Domain.Context.Customer.Entities;
 
-public class Customer : IAggregateRoot
+/// <summary>
+/// Represents a customer aggregate root in the banking domain.
+/// This aggregate encapsulates customer-related business logic and maintains consistency boundaries.
+/// </summary>
+public sealed class Customer : AggregateRoot
 {
-    public required Guid Id { get; set; }
-    public required DocumentNumber DocumentNumber { get; set; }
-    public Account? Account { get; set; }
-    public required IEnumerable<Limit> Limit { get; set; }
-    public required DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public required DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Gets the customer's document number.
+    /// </summary>
+    public DocumentNumber DocumentNumber { get; private set; }
 
-    #region Calculated Properties
-    public int LimitAmount => Limit?.Sum(limit => limit.Amount) ?? 0;
-    #endregion
+    /// <summary>
+    /// Gets the customer's name.
+    /// </summary>
+    public string Name { get; private set; }
 
-    public Customer(Guid id, string documentNumber, Account? account)
+    /// <summary>
+    /// Gets the customer's email address.
+    /// </summary>
+    public string Email { get; private set; }
+
+    /// <summary>
+    /// Gets the customer's account information.
+    /// </summary>
+    public Account Account { get; private set; }
+
+    /// <summary>
+    /// Gets the customer's limit entries collection (append-only).
+    /// </summary>
+    public IReadOnlyList<LimitEntry> LimitEntries { get; private set; }
+
+    /// <summary>
+    /// Gets the customer's current total limit calculated from all limit entries.
+    /// </summary>
+    public decimal CurrentLimit => LimitEntries.Sum(entry => entry.Amount);
+
+    private readonly List<LimitEntry> _limitEntries;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Customer"/> class for existing customers (from repository).
+    /// </summary>
+    /// <param name="id">The customer identifier.</param>
+    /// <param name="documentNumber">The customer's document number.</param>
+    /// <param name="name">The customer's name.</param>
+    /// <param name="email">The customer's email address.</param>
+    /// <param name="account">The customer's account information.</param>
+    /// <param name="limitEntries">The customer's limit entries collection.</param>
+    /// <param name="createdAt">The creation timestamp.</param>
+    /// <param name="updatedAt">The last update timestamp.</param>
+    /// <param name="version">The version for optimistic concurrency control.</param>
+    private Customer(
+        Guid id,
+        DocumentNumber documentNumber,
+        string name,
+        string email,
+        Account account,
+        IEnumerable<LimitEntry> limitEntries,
+        DateTime createdAt,
+        DateTime updatedAt,
+        long version)
     {
         Id = id;
-        DocumentNumber = DocumentNumber.TryCreate(documentNumber) ?? throw new ArgumentException("Invalid document number format.", nameof(documentNumber));
+        DocumentNumber = documentNumber;
+        Name = name;
+        Email = email;
         Account = account;
+        _limitEntries = limitEntries.ToList();
+        LimitEntries = _limitEntries.AsReadOnly();
+        CreatedAt = createdAt;
+        UpdatedAt = updatedAt;
+        Version = version;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Customer"/> class for new customers.
+    /// </summary>
+    /// <param name="documentNumber">The customer's document number.</param>
+    /// <param name="name">The customer's name.</param>
+    /// <param name="email">The customer's email address.</param>
+    /// <param name="account">The customer's account information.</param>
+    /// <param name="initialLimitAmount">The initial limit amount.</param>
+    /// <param name="initialLimitDescription">The initial limit description.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any parameter is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when name or email is empty or whitespace.</exception>
+    private Customer(
+        DocumentNumber documentNumber,
+        string name,
+        string email,
+        Account account,
+        decimal initialLimitAmount,
+        string initialLimitDescription)
+    {
+        ArgumentNullException.ThrowIfNull(documentNumber);
+        ArgumentNullException.ThrowIfNull(account);
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Customer name cannot be null or empty.", nameof(name));
+        }
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new ArgumentException("Customer email cannot be null or empty.", nameof(email));
+        }
+
+        DocumentNumber = documentNumber;
+        Name = name.Trim();
+        Email = email.Trim().ToLowerInvariant();
+        Account = account;
+        
+        // Initialize limit entries with the first entry
+        _limitEntries = new List<LimitEntry>();
+        if (initialLimitAmount > 0)
+        {
+            _limitEntries.Add(new LimitEntry(initialLimitAmount, initialLimitDescription));
+        }
+        LimitEntries = _limitEntries.AsReadOnly();
+        
+        // Raise domain event for customer creation
+        AddDomainEvent(new CustomerCreatedDomainEvent(Id, DocumentNumber));
+    }
+
+    /// <summary>
+    /// Creates a new customer with the specified information.
+    /// </summary>
+    /// <param name="documentNumber">The customer's document number.</param>
+    /// <param name="name">The customer's name.</param>
+    /// <param name="email">The customer's email address.</param>
+    /// <param name="account">The customer's account information.</param>
+    /// <param name="initialLimitAmount">The initial limit amount.</param>
+    /// <param name="initialLimitDescription">The initial limit description.</param>
+    /// <returns>A new <see cref="Customer"/> instance.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when any parameter is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when name or email is empty or whitespace.</exception>
+    public static Customer Create(
+        DocumentNumber documentNumber,
+        string name,
+        string email,
+        Account account,
+        decimal initialLimitAmount,
+        string initialLimitDescription)
+    {
+        return new Customer(documentNumber, name, email, account, initialLimitAmount, initialLimitDescription);
+    }
+
+    /// <summary>
+    /// Reconstructs a customer from repository data.
+    /// </summary>
+    /// <param name="id">The customer identifier.</param>
+    /// <param name="documentNumber">The customer's document number.</param>
+    /// <param name="name">The customer's name.</param>
+    /// <param name="email">The customer's email address.</param>
+    /// <param name="account">The customer's account information.</param>
+    /// <param name="limitEntries">The customer's limit entries collection.</param>
+    /// <param name="createdAt">The creation timestamp.</param>
+    /// <param name="updatedAt">The last update timestamp.</param>
+    /// <param name="version">The version for optimistic concurrency control.</param>
+    /// <returns>A reconstructed <see cref="Customer"/> instance.</returns>
+    public static Customer Reconstruct(
+        Guid id,
+        DocumentNumber documentNumber,
+        string name,
+        string email,
+        Account account,
+        IEnumerable<LimitEntry> limitEntries,
+        DateTime createdAt,
+        DateTime updatedAt,
+        long version)
+    {
+        ArgumentNullException.ThrowIfNull(documentNumber);
+
+        return new Customer(id, documentNumber, name, email, account, limitEntries, createdAt, updatedAt, version);
+    }
+
+    /// <summary>
+    /// Updates the customer's account information.
+    /// </summary>
+    /// <param name="account">The new account information.</param>
+    /// <exception cref="ArgumentNullException">Thrown when account is null.</exception>
+    public void UpdateAccount(Account account)
+    {
+        ArgumentNullException.ThrowIfNull(account);
+
+        if (Account.Equals(account))
+        {
+            return; // No change needed
+        }
+
+        Account = account;
+        MarkAsModified();
+
+        // Raise domain event for account update
+        AddDomainEvent(new CustomerAccountUpdatedDomainEvent(Id, Account));
+    }
+
+    /// <summary>
+    /// Adds a new limit adjustment entry.
+    /// </summary>
+    /// <param name="amount">The adjustment amount (positive for increase, negative for decrease).</param>
+    /// <param name="description">The description of the adjustment.</param>
+    /// <exception cref="ArgumentException">Thrown when description is null or whitespace.</exception>
+    public void AdjustLimit(decimal amount, string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            throw new ArgumentException("Limit adjustment description cannot be null or empty.", nameof(description));
+        }
+
+        var limitEntry = new LimitEntry(amount, description);
+        _limitEntries.Add(limitEntry);
+        MarkAsModified();
+
+        // Raise domain event for limit update
+        AddDomainEvent(new CustomerLimitUpdatedDomainEvent(Id, new[] { limitEntry }, CurrentLimit));
+    }
+
+    /// <summary>
+    /// Increases the customer's limit by adding a positive adjustment entry.
+    /// </summary>
+    /// <param name="amount">The amount to increase (must be positive).</param>
+    /// <param name="description">The description of the increase.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when amount is not positive.</exception>
+    /// <exception cref="ArgumentException">Thrown when description is null or whitespace.</exception>
+    public void IncreaseLimit(decimal amount, string description)
+    {
+        if (amount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Increase amount must be positive.");
+        }
+
+        AdjustLimit(amount, description);
+    }
+
+    /// <summary>
+    /// Decreases the customer's limit by adding a negative adjustment entry.
+    /// </summary>
+    /// <param name="amount">The amount to decrease (must be positive).</param>
+    /// <param name="description">The description of the decrease.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when amount is not positive.</exception>
+    /// <exception cref="ArgumentException">Thrown when description is null or whitespace.</exception>
+    public void DecreaseLimit(decimal amount, string description)
+    {
+        if (amount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Decrease amount must be positive.");
+        }
+
+        AdjustLimit(-amount, description);
     }
 }

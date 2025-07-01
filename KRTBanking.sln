@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KRTBanking.Domain", "src/KR
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KRTBanking.API", "src/KRTBanking.API\KRTBanking.API.csproj", "{C1C20A23-D121-4DB9-B952-0F54DA4289F1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KRTBanking.Infrastructure", "src/KRTBanking.Infrastructure\KRTBanking.Infrastructure.csproj", "{D2F4A5E8-3C19-4F7A-9B5A-8E6F1A2B3C4D}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6EEF8077-B7D6-48E6-A06E-80897E791742}"
 	ProjectSection(SolutionItems) = preProject
 		compose.yaml = compose.yaml
