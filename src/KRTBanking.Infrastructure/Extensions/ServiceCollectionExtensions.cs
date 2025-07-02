@@ -8,6 +8,7 @@ using KRTBanking.Infrastructure.HealthChecks;
 using KRTBanking.Infrastructure.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace KRTBanking.Infrastructure.Extensions;
 
@@ -42,7 +43,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDynamoDBContext>(serviceProvider =>
         {
             var client = serviceProvider.GetRequiredService<IAmazonDynamoDB>();
-            return new DynamoDBContext(client);
+            return new DynamoDBContextBuilder()
+                .WithDynamoDBClient(() => client)
+                .Build();
         });
 
         services.AddScoped<ICustomerRepository, CustomerDynamoRepository>();
@@ -63,5 +66,46 @@ public static class ServiceCollectionExtensions
             .AddCheck<DynamoDbHealthCheck>("dynamodb");
 
         return services;
+    }
+
+    /// <summary>
+    /// Adds all infrastructure services to the service collection.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The configuration.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Add DynamoDB services
+        services.AddDynamoDb(configuration);
+        
+        // Add health checks
+        services.AddDynamoDbHealthChecks();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Initializes the infrastructure services (database, etc.).
+    /// </summary>
+    /// <param name="serviceProvider">The service provider.</param>
+    /// <param name="logger">The logger instance.</param>
+    /// <returns>A task representing the initialization operation.</returns>
+    public static async Task InitializeInfrastructureAsync(this IServiceProvider serviceProvider, ILogger logger)
+    {
+        try
+        {
+            logger.LogInformation("Initializing infrastructure services...");
+            
+            var databaseInitializer = serviceProvider.GetRequiredService<IDatabaseInitializer>();
+            await databaseInitializer.InitializeAsync();
+            
+            logger.LogInformation("Infrastructure initialization completed successfully.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Failed to initialize infrastructure services. Application cannot start without proper infrastructure setup.");
+            throw;
+        }
     }
 }
