@@ -1,24 +1,29 @@
-﻿using KRTBanking.Application.DTOs.Customer;
+﻿using Asp.Versioning;
+using KRTBanking.Application.DTOs.Customer;
 using KRTBanking.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KRTBanking.API.Controllers;
 
+/// <summary>
+/// Controller for managing customer limit operations.
+/// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class LimitController : ControllerBase
 {
     private readonly ICustomerService _customerService;
-    private readonly ILogger<CustomerController> _logger;
+    private readonly ILogger<LimitController> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CustomerController"/> class.
+    /// Initializes a new instance of the <see cref="LimitController"/> class.
     /// </summary>
     /// <param name="customerService">The customer service.</param>
     /// <param name="logger">The logger.</param>
     public LimitController(
         ICustomerService customerService,
-        ILogger<CustomerController> logger)
+        ILogger<LimitController> logger)
     {
         _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

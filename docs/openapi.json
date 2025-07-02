@@ -1,16 +1,23 @@
 {
   "openapi": "3.0.4",
   "info": {
-    "title": "KRTBanking.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
-    "version": "1.0"
+    "title": "KRT Banking API",
+    "description": "A comprehensive banking API built with Domain-Driven Design principles",
+    "contact": {
+      "name": "KRT Banking Team",
+      "email": "dev@krtbanking.com"
+    },
+    "version": "v1"
   },
   "paths": {
-    "/api/customer": {
+    "/api/v1/customer": {
       "post": {
         "tags": [
           "Customer"
         ],
+        "summary": "Creates a new customer.",
         "requestBody": {
+          "description": "The create customer request.",
           "content": {
             "application/json": {
               "schema": {
@@ -96,10 +103,12 @@
         "tags": [
           "Customer"
         ],
+        "summary": "Gets a paginated list of customers.",
         "parameters": [
           {
             "name": "pageSize",
             "in": "query",
+            "description": "The page size (1-100).",
             "schema": {
               "type": "integer",
               "format": "int32",
@@ -109,6 +118,7 @@
           {
             "name": "lastEvaluatedKey",
             "in": "query",
+            "description": "The pagination key for the next page.",
             "schema": {
               "type": "string"
             }
@@ -158,16 +168,18 @@
         }
       }
     },
-    "/api/customer/{id}": {
+    "/api/v1/customer/{id}": {
       "get": {
         "tags": [
           "Customer"
         ],
+        "summary": "Gets a customer by ID.",
         "operationId": "GetCustomerById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The customer ID.",
             "required": true,
             "schema": {
               "type": "string",
@@ -222,10 +234,12 @@
         "tags": [
           "Customer"
         ],
+        "summary": "Deletes a customer (soft delete).\r\nThe customer data is retained for compliance but the customer cannot perform banking operations.\r\nThis endpoint provides DELETE semantics while performing deactivation in the domain.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The customer ID.",
             "required": true,
             "schema": {
               "type": "string",
@@ -280,12 +294,14 @@
         }
       }
     },
-    "/api/customer/execute-transaction": {
+    "/api/v1/customer/execute-transaction": {
       "post": {
         "tags": [
           "Customer"
         ],
+        "summary": "Executes a transaction for a customer based on merchant document.",
         "requestBody": {
+          "description": "The transaction execution details.",
           "content": {
             "application/json": {
               "schema": {
@@ -368,15 +384,17 @@
         }
       }
     },
-    "/api/limit/{id}": {
+    "/api/v1/limit/{id}": {
       "post": {
         "tags": [
           "Limit"
         ],
+        "summary": "Adjusts a customer's limit by adding a new limit entry.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "The customer ID.",
             "required": true,
             "schema": {
               "type": "string",
@@ -385,6 +403,7 @@
           }
         ],
         "requestBody": {
+          "description": "The limit adjustment request.",
           "content": {
             "application/json": {
               "schema": {

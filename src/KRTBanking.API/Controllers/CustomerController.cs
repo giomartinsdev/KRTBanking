@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using KRTBanking.Application.DTOs.Customer;
 using KRTBanking.Application.DTOs.Transaction;
 using KRTBanking.Application.Interfaces.Services;
@@ -9,7 +10,8 @@ namespace KRTBanking.API.Controllers;
 /// Controller for managing customer operations.
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class CustomerController : ControllerBase
 {
     private readonly ICustomerService _customerService;
