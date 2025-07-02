@@ -77,29 +77,6 @@ public sealed class CustomerService : ICustomerService
     }
 
     /// <inheritdoc />
-    public async Task<CustomerDto> UpdateCustomerAccountAsync(Guid customerId, UpdateAccountDto updateAccountDto, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(updateAccountDto);
-
-        _logger.LogInformation("Updating account for customer with ID: {CustomerId}", customerId);
-
-        var customer = await _customerRepository.GetByIdAsync(customerId, cancellationToken);
-        if (customer is null)
-        {
-            throw new InvalidOperationException($"Customer with ID {customerId} not found");
-        }
-
-        var newAccount = new Account(updateAccountDto.Agency, updateAccountDto.AccountNumber);
-        customer.UpdateAccount(newAccount);
-
-        await _customerRepository.UpdateAsync(customer, cancellationToken);
-
-        _logger.LogInformation("Account updated successfully for customer with ID: {CustomerId}", customerId);
-
-        return MapToDto(customer);
-    }
-    
-    /// <inheritdoc />
     public async Task<PagedCustomersDto> GetCustomersAsync(int pageSize = 10, string? lastEvaluatedKey = null, CancellationToken cancellationToken = default)
     {
         if (pageSize <= 0 || pageSize > 100)

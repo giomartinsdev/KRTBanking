@@ -15,12 +15,12 @@
 
     <Target Name="GenerateOpenApi" AfterTargets="Build" Condition="'$(Configuration)'=='Debug'">
         <PropertyGroup>
-            <OpenApiFileV3>$(OpenApiOutputPath)openapi.json</OpenApiFileV3>
+            <OpenApiFile>$(OpenApiOutputPath)openapi.json</OpenApiFile>
             <AssemblyNameFile>$(AssemblyName).dll</AssemblyNameFile>
         </PropertyGroup>
 
         <MakeDir Directories="$(OpenApiOutputPath)" Condition="!Exists('$(OpenApiOutputPath)')" />
-        <Exec Command="dotnet tool run swagger tofile --output &quot;$(OpenApiFileV3)&quot; &quot;$(OutputPath)$(AssemblyNameFile)&quot; v1" WorkingDirectory="$(ProjectDir)" EnvironmentVariables="ASPNETCORE_ENVIRONMENT=Development" />
+        <Exec Command="dotnet tool run swagger tofile --output &quot;$(OpenApiFile)&quot; &quot;$(OutputPath)$(AssemblyNameFile)&quot; v1" WorkingDirectory="$(ProjectDir)" EnvironmentVariables="ASPNETCORE_ENVIRONMENT=Development" />
     </Target>
 
     <ItemGroup>
