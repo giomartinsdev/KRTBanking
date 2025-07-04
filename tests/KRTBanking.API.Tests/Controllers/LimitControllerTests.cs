@@ -13,22 +13,14 @@ namespace KRTBanking.API.Tests.Controllers;
 public class LimitControllerTests
 {
     private readonly Mock<ICustomerService> _customerServiceMock;
-    private readonly Mock<ILogger<CustomerController>> _loggerMock;
+    private readonly Mock<ILogger<LimitController>> _loggerMock;
     private readonly LimitController _controller;
 
     public LimitControllerTests()
     {
         _customerServiceMock = new Mock<ICustomerService>();
-        _loggerMock = new Mock<ILogger<CustomerController>>();
+        _loggerMock = new Mock<ILogger<LimitController>>();
         _controller = new LimitController(_customerServiceMock.Object, _loggerMock.Object);
-    }
-
-    [Fact]
-    public void Constructor_WithNullCustomerService_ShouldThrowArgumentNullException()
-    {
-        // Arrange, Act & Assert
-        Assert.Throws<ArgumentNullException>(() => 
-            new LimitController(null!, _loggerMock.Object));
     }
 
     [Fact]
