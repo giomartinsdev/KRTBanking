@@ -105,7 +105,7 @@ public static class CustomerMapper
                         int.TryParse(accountParts[1], out var accountNumber))
                     {
                         var agency = (Agency)agencyCode;
-                        account = new Account(agency, accountNumber);
+                        account = Account.Reconstruct(agency, accountNumber, accountModel.CreatedAt);
                     }
                     else
                     {
@@ -127,7 +127,8 @@ public static class CustomerMapper
                 var limitEntryModels = JsonSerializer.Deserialize<List<LimitEntryModel>>(model.Limits, JsonOptions);
                 if (limitEntryModels is not null)
                 {
-                    limitEntries.AddRange(limitEntryModels.Select(entry => new LimitEntry(entry.Amount, entry.Description)));
+                    limitEntries.AddRange(limitEntryModels.Select(entry => 
+                        LimitEntry.Reconstruct(entry.Amount, entry.Description, entry.CreatedAt)));
                 }
             }
             catch (JsonException ex)

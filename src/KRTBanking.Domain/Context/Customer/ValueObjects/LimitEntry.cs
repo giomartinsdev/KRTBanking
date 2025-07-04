@@ -41,6 +41,25 @@ public sealed class LimitEntry : IValueObject, IEquatable<LimitEntry>
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="LimitEntry"/> class for reconstruction from storage.
+    /// </summary>
+    /// <param name="amount">The limit adjustment amount.</param>
+    /// <param name="description">The description of the adjustment.</param>
+    /// <param name="createdAt">The original creation timestamp.</param>
+    /// <exception cref="ArgumentException">Thrown when description is null or whitespace.</exception>
+    private LimitEntry(decimal amount, string description, DateTime createdAt)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            throw new ArgumentException("Limit entry description cannot be null or empty.", nameof(description));
+        }
+
+        Amount = amount;
+        Description = description.Trim();
+        CreatedAt = createdAt;
+    }
+
+    /// <summary>
     /// Creates a new limit entry with the specified amount and description.
     /// </summary>
     /// <param name="amount">The limit adjustment amount.</param>
@@ -49,6 +68,18 @@ public sealed class LimitEntry : IValueObject, IEquatable<LimitEntry>
     public static LimitEntry Create(decimal amount, string description)
     {
         return new LimitEntry(amount, description);
+    }
+
+    /// <summary>
+    /// Reconstructs a limit entry from stored data with the original creation timestamp.
+    /// </summary>
+    /// <param name="amount">The limit adjustment amount.</param>
+    /// <param name="description">The description of the adjustment.</param>
+    /// <param name="createdAt">The original creation timestamp.</param>
+    /// <returns>A reconstructed <see cref="LimitEntry"/> instance.</returns>
+    public static LimitEntry Reconstruct(decimal amount, string description, DateTime createdAt)
+    {
+        return new LimitEntry(amount, description, createdAt);
     }
 
     /// <summary>
