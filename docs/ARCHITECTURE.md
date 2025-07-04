@@ -372,7 +372,7 @@ sequenceDiagram
 ### 2. **Value Objects para Dados Críticos**
 
 **Implementado**:
-- `DocumentNumber`: Validação de CPF/CNPJ
+- `DocumentNumber`: Validação de CPF (v1 sem cpnpj)
 - `Account`: Imutabilidade de dados bancários
 - `LimitEntry`: Histórico imutável de alterações
 
