@@ -1,4 +1,0 @@
-implementar .http com o use case do teste tecnico
-implementar how to run the app + readme e archteture.md
-
-implementar logs e metricas com open telemetry
