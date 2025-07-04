@@ -1,0 +1,205 @@
+###
+# Arquivo HTTP para Casos de Uso do Analista de Fraudes - Banco KRT
+# Sistema de Gestão de Limites PIX
+# 
+# Casos de Uso:
+# 1. Cadastrar informações de limite (documento, agência, conta, limite PIX)
+# 2. Buscar informações de limite para conta cadastrada
+# 3. Alterar limite para transações PIX
+# 4. Remover registro de limite do banco de dados
+# 5. Processar transações PIX com verificação de limite
+###
+
+# Configuração da API Base
+@baseUrl = http://localhost:5000
+@apiVersion = 1
+@customerId = b12bb8e7-e35b-4557-8a6b-f6ed89ba4698
+@documentNumber = 08517601041
+###
+# ===== CASO DE USO 1: CADASTRAR LIMITE =====
+# O analista de fraudes deve ser capaz de cadastrar no banco de dados as 
+# informações referentes à gestão de limite: documento, número da agência, 
+# número da conta e o limite para transações PIX.
+# Obs.: Todos os campos são obrigatórios.
+### Cadastrar cliente com limite PIX - Exemplo 1
+POST {{baseUrl}}/api/v{{apiVersion}}/Customer
+Content-Type: application/json
+
+{
+  "documentNumber": "{{documentNumber}}",
+  "name": "João Silva Santos",
+  "email": "joao.silva@email.com",
+  "agency": 1,
+  "accountNumber": 123456,
+  "limitAmount": 5000.00,
+  "limitDescription": "Limite PIX - Pessoa Física"
+}
+
+
+###
+# ===== CASO DE USO 2: BUSCAR INFORMAÇÕES DE LIMITE =====
+# O analista de fraudes deve ser capaz de buscar as informações de limite 
+# para uma conta já cadastrada.
+
+### Buscar cliente por ID (substituir pelo ID real retornado no cadastro)
+GET {{baseUrl}}/api/v{{apiVersion}}/Customer/{{customerId}}
+Content-Type: application/json
+
+### Buscar todos os clientes (paginado)
+GET {{baseUrl}}/api/v{{apiVersion}}/Customer?pageSize=10
+Content-Type: application/json
+
+### Buscar clientes com paginação (página seguinte)
+GET {{baseUrl}}/api/v{{apiVersion}}/Customer?pageSize=5&lastEvaluatedKey={{nextPageKey}}
+Content-Type: application/json
+
+###
+# ===== CASO DE USO 3: ALTERAR LIMITE PIX =====
+# O analista de fraudes deve ser capaz de alterar o limite para transações PIX 
+# de uma conta já cadastrada.
+
+### Aumentar limite PIX (substituir pelo ID real do cliente)
+POST {{baseUrl}}/api/v{{apiVersion}}/Limit/{{customerId}}
+Content-Type: application/json
+
+{
+  "amount": 2000.00,
+  "description": "Aumento de limite PIX - Solicitação do cliente"
+}
+
+### Diminuir limite PIX (substituir pelo ID real do cliente)
+POST {{baseUrl}}/api/v{{apiVersion}}/Limit/{{customerId}}
+Content-Type: application/json
+
+{
+  "amount": -1000.00,
+  "description": "Redução de limite PIX - Análise de risco"
+}
+
+### Ajuste de limite por suspeita de fraude
+POST {{baseUrl}}/api/v{{apiVersion}}/Limit/{{customerId}}
+Content-Type: application/json
+
+{
+  "amount": -5000.00,
+  "description": "Bloqueio temporário - Suspeita de fraude detectada"
+}
+
+### Liberação de limite após análise
+POST {{baseUrl}}/api/v{{apiVersion}}/Limit/{{customerId}}
+Content-Type: application/json
+
+{
+  "amount": 5000.00,
+  "description": "Liberação de limite - Análise de fraude concluída"
+}
+
+###
+# ===== CASO DE USO 5: PROCESSAR TRANSAÇÕES PIX =====
+# As transações de PIX devem passar pelo sistema de gestão de limites, que irá conferir 
+# se o valor da transação está dentro do limite disponível para o cliente.
+
+### Transação PIX Autorizada - Dentro do limite
+POST {{baseUrl}}/api/v{{apiVersion}}/Customer/execute-transaction
+Content-Type: application/json
+
+{
+  "merchantDocument": "{{documentNumber}}",
+  "value": 1000.00
+}
+
+### Transação PIX Negada - Valor acima do limite
+POST {{baseUrl}}/api/v{{apiVersion}}/Customer/execute-transaction
+Content-Type: application/json
+
+{
+  "merchantDocument": "{{documentNumber}}",
+  "value": 10000.00
+}
+
+### Transação PIX - Valor exato do limite
+POST {{baseUrl}}/api/v{{apiVersion}}/Customer/execute-transaction
+Content-Type: application/json
+
+{
+  "merchantDocument": "{{documentNumber}}",
+  "value": 5000.00
+}
+
+### Transação PIX - Múltiplas transações para testar consumo de limite
+POST {{baseUrl}}/api/v{{apiVersion}}/Customer/execute-transaction
+Content-Type: application/json
+
+{
+  "merchantDocument": "{{documentNumber}}",
+  "value": 500.00
+}
+
+###
+# ===== CASO DE USO 4: REMOVER REGISTRO DE LIMITE =====
+# O analista de fraudes deve ser capaz de remover um registro do banco de dados de limite.
+# Nota: Este endpoint realiza uma exclusão lógica (soft delete) por questões de compliance.
+
+### Remover cliente/limite (substituir pelo ID real do cliente)
+DELETE {{baseUrl}}/api/v{{apiVersion}}/Customer/{{customerId}}
+Content-Type: application/json
+
+###
+# ===== CENÁRIOS DE TESTE ESPECÍFICOS =====
+
+### Teste: Transação com documento referente a cliente inexistente (deve ser rejeitada)
+POST {{baseUrl}}/api/v{{apiVersion}}/Customer/execute-transaction
+Content-Type: application/json
+
+{
+  "merchantDocument": "00000000000",
+  "value": 100.00
+}
+
+### Teste: Transação com valor zero (deve ser rejeitada)
+POST {{baseUrl}}/api/v{{apiVersion}}/Customer/execute-transaction
+Content-Type: application/json
+
+{
+  "merchantDocument": "12345678901",
+  "value": 0.00
+}
+
+### Teste: Transação com valor negativo (deve ser rejeitada)
+POST {{baseUrl}}/api/v{{apiVersion}}/Customer/execute-transaction
+Content-Type: application/json
+
+{
+  "merchantDocument": "12345678901",
+  "value": -100.00
+}
+
+###
+# ===== CENÁRIOS DE AUDITORIA E COMPLIANCE =====
+
+### Buscar histórico de limites de um cliente
+GET {{baseUrl}}/api/v{{apiVersion}}/Customer/{{customerId}}
+Content-Type: application/json
+
+### Verificar status de cliente após exclusão
+GET {{baseUrl}}/api/v{{apiVersion}}/Customer/{{customerId}}
+Content-Type: application/json
+
+###
+# ===== VARIÁVEIS PARA TESTES =====
+# Substitua estas variáveis pelos valores reais obtidos durante os testes:
+# @customerId = [ID do cliente retornado na criação]
+# @nextPageKey = [Chave de paginação retornada na consulta]
+
+### Exemplo de uso com variáveis específicas:
+# @customerId = 12345678-1234-1234-1234-123456789012
+# @nextPageKey = eyJjdXN0b21lcklkIjoiMTIzNDU2NzgifQ==
+
+###
+# ===== NOTAS IMPORTANTES =====
+# 1. Todos os campos são obrigatórios conforme especificado
+# 2. O sistema realiza verificação de limite antes de autorizar transações
+# 3. Transações negadas não consomem limite
+# 4. Transações autorizadas descontam o valor do limite disponível
+# 5. A exclusão de clientes é lógica (soft delete) para manter compliance
+# 6. O sistema mantém histórico de todas as alterações de limite

@@ -56,6 +56,30 @@ public sealed class Account : IValueObject, IEquatable<Account>
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="Account"/> class for reconstruction from storage.
+    /// </summary>
+    /// <param name="agency">The agency.</param>
+    /// <param name="accountNumber">The account number.</param>
+    /// <param name="createdAt">The original creation timestamp.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when account number is invalid.</exception>
+    private Account(Agency agency, int accountNumber, DateTime createdAt)
+    {
+        if (!Enum.IsDefined(typeof(Agency), agency))
+        {
+            throw new ArgumentOutOfRangeException(nameof(agency), agency, "Invalid agency value.");
+        }
+
+        if (accountNumber <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(accountNumber), accountNumber, "Account number must be positive.");
+        }
+
+        Agency = agency;
+        AccountNumber = accountNumber;
+        CreatedAt = createdAt;
+    }
+
+    /// <summary>
     /// Creates a new account with the specified agency and account number.
     /// </summary>
     /// <param name="agency">The agency.</param>
@@ -64,6 +88,18 @@ public sealed class Account : IValueObject, IEquatable<Account>
     public static Account Create(Agency agency, int accountNumber)
     {
         return new Account(agency, accountNumber);
+    }
+
+    /// <summary>
+    /// Reconstructs an account from stored data with the original creation timestamp.
+    /// </summary>
+    /// <param name="agency">The agency.</param>
+    /// <param name="accountNumber">The account number.</param>
+    /// <param name="createdAt">The original creation timestamp.</param>
+    /// <returns>A reconstructed <see cref="Account"/> instance.</returns>
+    public static Account Reconstruct(Agency agency, int accountNumber, DateTime createdAt)
+    {
+        return new Account(agency, accountNumber, createdAt);
     }
 
     /// <summary>

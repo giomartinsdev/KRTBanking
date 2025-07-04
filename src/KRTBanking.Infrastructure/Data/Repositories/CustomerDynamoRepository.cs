@@ -203,6 +203,7 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
             Name = customer.Name,
             Email = customer.Email,
             AccountNumber = customer.Account.Number,
+            AccountCreatedAt = customer.Account.CreatedAt,
             LimitEntries = limitEntriesJson,
             IsActive = customer.IsActive,
             CreatedAt = customer.CreatedAt,
@@ -219,7 +220,7 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
         var agency = (Agency)int.Parse(accountParts[0]);
         var accountNumber = int.Parse(accountParts[1]);
         
-        var account = Account.Create(agency, accountNumber);
+        var account = Account.Reconstruct(agency, accountNumber, model.AccountCreatedAt);
         
         var limitEntries = new List<LimitEntry>();
         if (!string.IsNullOrEmpty(model.LimitEntries) && model.LimitEntries != "[]")
@@ -230,7 +231,7 @@ public sealed class CustomerDynamoRepository : ICustomerRepository
                 if (limitEntryModels != null)
                 {
                     limitEntries.AddRange(limitEntryModels.Select(entry =>
-                        new LimitEntry(entry.Amount, entry.Description)));
+                        LimitEntry.Reconstruct(entry.Amount, entry.Description, entry.CreatedAt)));
                 }
             }
             catch (JsonException)

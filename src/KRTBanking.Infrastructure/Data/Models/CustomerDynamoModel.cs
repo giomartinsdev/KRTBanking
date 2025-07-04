@@ -39,6 +39,12 @@ public sealed class CustomerDynamoModel
     public required string AccountNumber { get; set; }
 
     /// <summary>
+    /// Gets or sets the account creation timestamp.
+    /// </summary>
+    [DynamoDBProperty]
+    public DateTime AccountCreatedAt { get; set; }
+
+    /// <summary>
     /// Gets or sets the limit entries as JSON string.
     /// </summary>
     [DynamoDBProperty]
