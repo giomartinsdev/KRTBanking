@@ -4,7 +4,7 @@
 [![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-orange.svg)](https://aws.amazon.com/dynamodb/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
-Sistema completo de gestão de limites para transações PIX desenvolvido para o Banco KRT, implementando Domain-Driven Design (DDD) e Clean Architecture.
+Sistema completo de gestão de limites para transações desenvolvido para o Banco KRT, implementando Domain-Driven Design (DDD) e Clean Architecture.
 
 ## 📋 Índice
 
