@@ -1,4 +1,4 @@
-﻿# 🏦 KRT Banking - Sistema de Gestão de Limites PIX
+﻿# 🏦 KRT Banking - Sistema de Gestão de Limites
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/)
 [![AWS DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-orange.svg)](https://aws.amazon.com/dynamodb/)
